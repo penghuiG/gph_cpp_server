@@ -1,6 +1,7 @@
 #include <iostream>
 #include "epoll.h"
 #include "tcpServer.h"
+#include "accountReg.h"
 #include <thread>
 #include <chrono>
 int main() {

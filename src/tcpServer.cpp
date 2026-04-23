@@ -82,18 +82,18 @@ void TcpServer::stop() {
 void TcpServer::handleEventCallback(const epoll_event& event) {
     const int fd = event.data.fd;
 
-    if (fd == serverSocket) {
-        acceptClient();
+    if (fd == serverSocket) {//有新客户端连接
+        acceptClient();//TODO:可以将这个函数加入线程池中?????????????????????????????,后面再研究
         return;
     }
 
-    if (event.events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP)) {
+    if (event.events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP)) {//客户端断开连接
         epoll.removeEvent(fd);
         ::close(fd);
         return;
     }
 
-    if (event.events & EPOLLIN) {
+    if (event.events & EPOLLIN) {//有数据可读
         handleClient(fd);
     }
 }
@@ -108,12 +108,13 @@ void TcpServer::acceptClient() {
             throw std::runtime_error(std::string("accept failed: ") + std::strerror(errno));
         }
 
-        if (setNonBlocking(clientFd) == -1) {
+        if (setNonBlocking(clientFd) == -1) {//设置非阻塞
             ::close(clientFd);
             continue;
         }
+        ::write(clientFd, "Hello, this is server", 22);
 
-        epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);
+        epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);//添加事件
     }
 }
 
