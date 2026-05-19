@@ -45,7 +45,7 @@ void AccountReg::checkUsernameExists(const std::string& username) {
     }
 }
 
-std::string AccountReg::generateSalt() {
+std::string AccountReg::generateSalt() {//
     std::random_device rd;
     std::mt19937_64 gen(rd());
     std::uniform_int_distribution<uint64_t> dist;
@@ -57,4 +57,9 @@ std::string AccountReg::hashPassword(const std::string& password, const std::str
     // 仅用于 demo/占位：不是密码学安全哈希
     std::hash<std::string> h;
     return std::to_string(h(password + ":" + salt));
+}
+
+void accountRegTest() {
+    AccountReg accountReg;
+    accountReg.registerAccount("test", "aA123456");
 }

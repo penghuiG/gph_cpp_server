@@ -54,3 +54,5 @@ private:
     std::unordered_map<std::string, std::string> users;
     std::mutex mu;
 };
+
+void accountRegTest();
