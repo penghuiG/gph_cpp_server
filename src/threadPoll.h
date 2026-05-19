@@ -81,23 +81,23 @@ private:
     bool stop;                          // 是否停止线程池
 };
 
-int threadPoll_test() {
-    ThreadPool pool(10);
-        for (int i = 0; i < 10; ++i)
-        {
-            pool.enqueue([i](){
-                static int x = 0;
-                std::cout << "i: " << i << std::endl;
-                static std::mutex m;
-                {
-                    std::lock_guard<std::mutex> lock(m);
-                    ++x;
+// int threadPoll_test() {
+//     ThreadPool pool(10);
+//         for (int i = 0; i < 10; ++i)
+//         {
+//             pool.enqueue([i](){
+//                 static int x = 0;
+//                 std::cout << "i: " << i << std::endl;
+//                 static std::mutex m;
+//                 {
+//                     std::lock_guard<std::mutex> lock(m);
+//                     ++x;
                     
-                    std::cout << "x: " << x << std::endl;
-                    std::cout << std::endl;
-                }
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            });
-        }
-        return 0;
-}
+//                     std::cout << "x: " << x << std::endl;
+//                     std::cout << std::endl;
+//                 }
+//                 std::this_thread::sleep_for(std::chrono::seconds(1));
+//             });
+//         }
+//         return 0;
+// }

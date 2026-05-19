@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-TcpServer::TcpServer(Epoll& epoll, int port) : epoll(epoll), port(port) {}
+TcpServer::TcpServer(Epoll& epoll, int port) : epoll(epoll), port(port), threadPool(10) {}
 
 TcpServer::~TcpServer() {
     try {
@@ -83,7 +83,7 @@ void TcpServer::handleEventCallback(const epoll_event& event) {
     const int fd = event.data.fd;
 
     if (fd == serverSocket) {//有新客户端连接
-        acceptClient();//TODO:可以将这个函数加入线程池中?????????????????????????????,后面再研究
+        threadPool.enqueue([this]() { acceptClient(); });
         return;
     }
 
@@ -94,7 +94,7 @@ void TcpServer::handleEventCallback(const epoll_event& event) {
     }
 
     if (event.events & EPOLLIN) {//有数据可读
-        handleClient(fd);
+        threadPool.enqueue([this, fd]() { handleClient(fd); });
     }
 }
 
@@ -122,12 +122,12 @@ void TcpServer::handleClient(int clientFd) {
     char buf[4096];
     while (true) {
         ssize_t n = ::read(clientFd, buf, sizeof(buf));
-        if (n == 0) {
+        if (n == 0) {//客户端断开连接
             epoll.removeEvent(clientFd);
             ::close(clientFd);
             return;
         }
-        if (n < 0) {
+        if (n < 0) {//读取错误
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
             epoll.removeEvent(clientFd);
             ::close(clientFd);

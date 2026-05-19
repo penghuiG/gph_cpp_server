@@ -4,7 +4,7 @@
 #include <string>
 
 #include <sys/epoll.h>
-
+#include "threadPoll.h"
 class Epoll;
 
 class TcpServer {
@@ -29,4 +29,5 @@ private:
     int port = 0;
     int serverSocket = -1;
     bool running = false;
+    ThreadPool threadPool;
 };
