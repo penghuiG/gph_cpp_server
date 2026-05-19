@@ -19,7 +19,7 @@ TcpServer::~TcpServer() {
     try {
         stop();
     } catch (...) {
-        // 析构里不抛异常
+        // 析构里不抛异常,防止异常扩散
     }
 }
 
@@ -103,18 +103,18 @@ void TcpServer::acceptClient() {
         int clientFd = ::accept(serverSocket, nullptr, nullptr);
         if (clientFd == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                return; // 已经 accept 完了
+                return; 
             }
             throw std::runtime_error(std::string("accept failed: ") + std::strerror(errno));
         }
 
-        if (setNonBlocking(clientFd) == -1) {//设置非阻塞
+        if (setNonBlocking(clientFd) == -1) {
             ::close(clientFd);
             continue;
         }
         ::write(clientFd, "Hello, this is server", 22);
 
-        epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);//添加事件
+        epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);
     }
 }
 
