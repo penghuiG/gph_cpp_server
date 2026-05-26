@@ -9,7 +9,7 @@
 
 class ThreadPool {
     public:
-        explicit ThreadPool(size_t threadCount)
+        explicit ThreadPool(size_t threadCount)  //explicit是 C++ 构造函数的关键字,作用是禁止编译器偷偷做“隐式类型转换”
             : m_stop(false)
         {
             for (size_t i = 0; i < threadCount; ++i) {
