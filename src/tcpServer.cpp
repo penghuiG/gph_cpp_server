@@ -83,7 +83,7 @@ void TcpServer::handleEventCallback(const epoll_event& event) {
     const int fd = event.data.fd;
 
     if (fd == serverSocket) {//有新客户端连接
-        threadPool.enqueue([this]() { acceptClient(); });
+        threadPool.submit([this]() { acceptClient(); });
         return;
     }
 
@@ -94,7 +94,7 @@ void TcpServer::handleEventCallback(const epoll_event& event) {
     }
 
     if (event.events & EPOLLIN) {//有数据可读
-        threadPool.enqueue([this, fd]() { handleClient(fd); });
+        threadPool.submit([this, fd]() { handleClient(fd); });
     }
 }
 
