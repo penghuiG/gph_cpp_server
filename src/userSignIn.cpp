@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "MysqlOperator.h"
+#include "dbOperator.h"
 #include "authUtil.h"
 #include "dbConfig.h"
 
@@ -37,10 +37,6 @@ bool UserSignIn::checkSignIn(const std::string& account) {
 }
 
 void userSignInTest() {
-    AccountReg accountReg;
-    accountReg.unregisterAccount("xhh");
-    accountReg.registerAccount("xhh", "Xhh123456");
-
     UserSignIn userSignIn;
     userSignIn.signIn("xhh", "Xhh123456");
     if (userSignIn.checkSignIn("xhh")) {
@@ -53,6 +49,4 @@ void userSignInTest() {
     if (!userSignIn.checkSignIn("xhh")) {
         std::cout << "sign out success" << std::endl;
     }
-
-    accountReg.unregisterAccount("xhh");
 }

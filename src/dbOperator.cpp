@@ -1,4 +1,4 @@
-#include "MysqlOperator.h"
+#include "dbOperator.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -57,12 +57,12 @@ void MysqlOperator::execute(const std::string& query, const std::vector<std::str
 
 bool MysqlOperator::exists(const std::string& query, const std::vector<std::string>& params) {
     if (!connection) throw std::runtime_error("MysqlOperator::exists called before connect()");
-    sql::PreparedStatement* stmt = connection->prepareStatement(query);
+    sql::PreparedStatement* stmt = connection->prepareStatement(query);//准备语句
     for (size_t i = 0; i < params.size(); i++) {
         stmt->setString(static_cast<unsigned int>(i + 1), params[i]);
     }
     sql::ResultSet* res = stmt->executeQuery();
-    const bool found = res->next();
+    const bool found = res->next();//判断是否存在,如果存在则返回true,否则返回false
     delete res;
     delete stmt;
     return found;

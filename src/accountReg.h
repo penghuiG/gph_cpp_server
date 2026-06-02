@@ -44,11 +44,10 @@ public:
 private:
     void checkUsernameFormat(const std::string& username);
     void checkPasswordStrength(const std::string& password);
-    void checkUsernameExists(const std::string& username);
+    bool checkUsernameExists(const std::string& username);
 
 private:
-    // 先做一个最小可编译实现：用内存表模拟用户库
-    // 后续如果要接 MySQL，再把实现替换掉即可
+
     std::string generateSalt();
     std::string hashPassword(const std::string& password, const std::string& salt);
 

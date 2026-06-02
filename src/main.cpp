@@ -4,12 +4,13 @@
 #include "accountReg.h"
 #include <thread>
 #include <chrono>
-#include "MysqlOperator.h"
+#include "dbOperator.h"
 #include "userSignIn.h"
 
 
 int main() {
     accountRegTest();
+    std::cout << "accountRegTest success" << std::endl;
     userSignInTest();
     // Epoll epoll;
     // TcpServer tcpServer(epoll, 8888);

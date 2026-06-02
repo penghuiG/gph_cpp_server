@@ -4,15 +4,17 @@
 #include <regex>
 #include <stdexcept>
 
-#include "MysqlOperator.h"
+#include "dbOperator.h"
 #include "authUtil.h"
 #include "dbConfig.h"
 
 void AccountReg::registerAccount(const std::string& account, const std::string& password) {
     checkUsernameFormat(account);
     checkPasswordStrength(password);
-    checkUsernameExists(account);
-
+    if (checkUsernameExists(account)) {
+        throw std::runtime_error("Username already exists");
+        return;
+    }
     MysqlOperator mysql_operator;
     mysql_operator.connect(db::kHost, db::kUser, db::kPassword, db::kName);
     const std::string salt = generateSalt();
@@ -52,15 +54,14 @@ void AccountReg::checkPasswordStrength(const std::string& password) {
     }
 }
 
-void AccountReg::checkUsernameExists(const std::string& username) {
+bool AccountReg::checkUsernameExists(const std::string& username) {
     MysqlOperator mysql_operator;
     mysql_operator.connect(db::kHost, db::kUser, db::kPassword, db::kName);
-    if (mysql_operator.exists(
-            "SELECT 1 FROM users WHERE username = ? AND is_active = 1 LIMIT 1",
-            {username})) {
-        throw std::runtime_error("Username already exists");
-    }
+    const bool exists = mysql_operator.exists(
+        "SELECT 1 FROM users WHERE username = ? AND is_active = 1 LIMIT 1",
+        {username});
     mysql_operator.disconnect();
+    return exists;
 }
 
 std::string AccountReg::generateSalt() {
@@ -85,5 +86,4 @@ void accountRegTest() {
     AccountReg accountReg;
     accountReg.unregisterAccount("xhh");
     accountReg.registerAccount("xhh", "Xhh123456");
-    accountReg.unregisterAccount("xhh");
 }
