@@ -1,4 +1,4 @@
-#include "tcpServer.h"
+﻿#include "tcpServer.h"
 
 #include "epoll.h"
 
@@ -13,13 +13,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-TcpServer::TcpServer(Epoll& epoll, int port) : epoll(epoll), port(port), threadPool(10) {}
+TcpServer::TcpServer(Epoll& epoll, int port)
+    : epoll(epoll),
+      port(port),
+      threadPool(10),
+      requestHandler_(accountReg_, userSignIn_) {}
 
 TcpServer::~TcpServer() {
     try {
         stop();
     } catch (...) {
-        // 析构里不抛异常,防止异常扩散
     }
 }
 
@@ -82,19 +85,33 @@ void TcpServer::stop() {
 void TcpServer::handleEventCallback(const epoll_event& event) {
     const int fd = event.data.fd;
 
-    if (fd == serverSocket) {//有新客户端连接
-        threadPool.submit([this]() { acceptClient(); });
+    if (fd == serverSocket) {
+        threadPool.submit([this]() {
+            try {
+                acceptClient();
+            } catch (const std::exception& e) {
+                std::cerr << "accept error: " << e.what() << std::endl;
+            }
+        });
         return;
     }
 
-    if (event.events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP)) {//客户端断开连接
+    if (event.events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP)) {
         epoll.removeEvent(fd);
         ::close(fd);
         return;
     }
 
-    if (event.events & EPOLLIN) {//有数据可读
-        threadPool.submit([this, fd]() { handleClient(fd); });
+    if (event.events & EPOLLIN) {
+        threadPool.submit([this, fd]() {
+            try {
+                handleClient(fd);
+            } catch (const std::exception& e) {
+                std::cerr << "client handler error: " << e.what() << std::endl;
+                epoll.removeEvent(fd);
+                ::close(fd);
+            }
+        });
     }
 }
 
@@ -103,7 +120,7 @@ void TcpServer::acceptClient() {
         int clientFd = ::accept(serverSocket, nullptr, nullptr);
         if (clientFd == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                return; 
+                return;
             }
             throw std::runtime_error(std::string("accept failed: ") + std::strerror(errno));
         }
@@ -112,39 +129,44 @@ void TcpServer::acceptClient() {
             ::close(clientFd);
             continue;
         }
-        ::write(clientFd, "Hello, this is server", 22);
 
+        sendAll(clientFd, "commands: REGISTER LOGIN LOGOUT UNREGISTER CHECK\n");
         epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);
+    }
+}
+
+void TcpServer::sendAll(int clientFd, const std::string& data) {
+    size_t sent = 0;
+    while (sent < data.size()) {
+        ssize_t n = ::write(clientFd, data.data() + sent, data.size() - sent);
+        if (n < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            }
+            throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
+        }
+        sent += static_cast<size_t>(n);
     }
 }
 
 void TcpServer::handleClient(int clientFd) {
     char buf[4096];
     while (true) {
-        ssize_t n = ::read(clientFd, buf, sizeof(buf));
-        if (n == 0) {//客户端断开连接
+        ssize_t n = ::read(clientFd, buf, sizeof(buf) - 1);
+        if (n == 0) {
             epoll.removeEvent(clientFd);
             ::close(clientFd);
             return;
         }
-        if (n < 0) {//读取错误
+        if (n < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
             epoll.removeEvent(clientFd);
             ::close(clientFd);
             return;
         }
 
-        // echo 回去
-        ssize_t sent = 0;
-        while (sent < n) {
-            ssize_t m = ::write(clientFd, buf + sent, static_cast<size_t>(n - sent));
-            if (m < 0) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) break;
-                epoll.removeEvent(clientFd);
-                ::close(clientFd);
-                return;
-            }
-            sent += m;
-        }
+        buf[n] = '\0';
+        const std::string response = requestHandler_.handle(buf);
+        sendAll(clientFd, response);
     }
 }

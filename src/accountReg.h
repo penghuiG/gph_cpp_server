@@ -12,49 +12,25 @@ CREATE TABLE users (
 );
 */
 
-/*
-客户端请求注册
-↓
-服务器校验参数
-  ├─ 用户名格式
-  ├─ 密码强度
-  └─ 用户名是否存在
-↓
-生成 salt
-↓
-hash = Hash(password + salt)
-↓
-写入数据库
-↓
-返回注册结果
-*/
 #include <string>
-#include <mutex>
-#include <unordered_map>
+
+#include "authResult.h"
 
 class AccountReg {
 public:
     AccountReg() = default;
     ~AccountReg() = default;
 
-    // 注册账号；失败抛异常（用户名格式/密码强度/重复用户名等）
-    void registerAccount(const std::string& account, const std::string& password);
-    //注销账号
-    void unregisterAccount(const std::string& account);
-private:
-    void checkUsernameFormat(const std::string& username);
-    void checkPasswordStrength(const std::string& password);
-    bool checkUsernameExists(const std::string& username);
+    AuthResult registerAccount(const std::string& account, const std::string& password);
+    AuthResult unregisterAccount(const std::string& account);
 
 private:
+    AuthResult checkUsernameFormat(const std::string& username) const;
+    AuthResult checkPasswordStrength(const std::string& password) const;
+    bool checkUsernameExists(const std::string& username);
 
     std::string generateSalt();
     std::string hashPassword(const std::string& password, const std::string& salt);
-
-private:
-    // username -> "salt:hash"
-    std::unordered_map<std::string, std::string> users;
-    std::mutex mu;
 };
 
 void accountRegTest();

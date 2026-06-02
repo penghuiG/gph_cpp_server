@@ -1,10 +1,14 @@
-#pragma once
+﻿#pragma once
 
-#include <functional>
 #include <string>
 
 #include <sys/epoll.h>
+
+#include "accountReg.h"
+#include "requestHandler.h"
 #include "threadPoll.h"
+#include "userSignIn.h"
+
 class Epoll;
 
 class TcpServer {
@@ -15,12 +19,12 @@ public:
     void start();
     void stop();
 
-    // 由 Epoll 回调触发
     void handleEventCallback(const epoll_event& event);
 
 private:
     void acceptClient();
     void handleClient(int clientFd);
+    void sendAll(int clientFd, const std::string& data);
 
     static int setNonBlocking(int fd);
 
@@ -30,4 +34,8 @@ private:
     int serverSocket = -1;
     bool running = false;
     ThreadPool threadPool;
+
+    AccountReg accountReg_;
+    UserSignIn userSignIn_;
+    RequestHandler requestHandler_;
 };

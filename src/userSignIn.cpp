@@ -1,13 +1,12 @@
 ﻿#include "userSignIn.h"
 
 #include <iostream>
-#include <stdexcept>
 
-#include "dbOperator.h"
 #include "authUtil.h"
 #include "dbConfig.h"
+#include "dbOperator.h"
 
-void UserSignIn::signIn(const std::string& account, const std::string& password) {
+AuthResult UserSignIn::signIn(const std::string& account, const std::string& password) {
     MysqlOperator mysql_operator;
     mysql_operator.connect(db::kHost, db::kUser, db::kPassword, db::kName);
 
@@ -19,16 +18,18 @@ void UserSignIn::signIn(const std::string& account, const std::string& password)
     mysql_operator.disconnect();
 
     if (!found || !auth::verifyStoredPassword(password, stored)) {
-        throw std::runtime_error("Invalid username or password");
+        return AuthResult::fail(AuthErrorCode::InvalidCredentials, "Invalid username or password");
     }
 
     std::lock_guard<std::mutex> lk(mu_);
     sessions_.insert(account);
+    return AuthResult::success();
 }
 
-void UserSignIn::signOut(const std::string& account) {
+AuthResult UserSignIn::signOut(const std::string& account) {
     std::lock_guard<std::mutex> lk(mu_);
     sessions_.erase(account);
+    return AuthResult::success();
 }
 
 bool UserSignIn::checkSignIn(const std::string& account) {
@@ -38,11 +39,13 @@ bool UserSignIn::checkSignIn(const std::string& account) {
 
 void userSignInTest() {
     UserSignIn userSignIn;
-    userSignIn.signIn("xhh", "Xhh123456");
+
+    if (auto result = userSignIn.signIn("xhh", "Xhh123456"); !result.ok()) {
+        std::cerr << "sign in failed: " << result.message << std::endl;
+        return;
+    }
     if (userSignIn.checkSignIn("xhh")) {
         std::cout << "sign in success" << std::endl;
-    } else {
-        std::cout << "sign in failed" << std::endl;
     }
 
     userSignIn.signOut("xhh");

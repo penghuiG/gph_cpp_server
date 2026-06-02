@@ -1,20 +1,24 @@
 ﻿#include "accountReg.h"
 
+#include <iostream>
 #include <random>
 #include <regex>
-#include <stdexcept>
 
-#include "dbOperator.h"
 #include "authUtil.h"
 #include "dbConfig.h"
+#include "dbOperator.h"
 
-void AccountReg::registerAccount(const std::string& account, const std::string& password) {
-    checkUsernameFormat(account);
-    checkPasswordStrength(password);
-    if (checkUsernameExists(account)) {
-        throw std::runtime_error("Username already exists");
-        return;
+AuthResult AccountReg::registerAccount(const std::string& account, const std::string& password) {
+    if (auto result = checkUsernameFormat(account); !result.ok()) {
+        return result;
     }
+    if (auto result = checkPasswordStrength(password); !result.ok()) {
+        return result;
+    }
+    if (checkUsernameExists(account)) {
+        return AuthResult::fail(AuthErrorCode::UsernameExists, "Username already exists");
+    }
+
     MysqlOperator mysql_operator;
     mysql_operator.connect(db::kHost, db::kUser, db::kPassword, db::kName);
     const std::string salt = generateSalt();
@@ -29,29 +33,37 @@ void AccountReg::registerAccount(const std::string& account, const std::string& 
             {account, stored, account});
     }
     mysql_operator.disconnect();
+    return AuthResult::success();
 }
 
-void AccountReg::unregisterAccount(const std::string& account) {
+AuthResult AccountReg::unregisterAccount(const std::string& account) {
+    if (auto result = checkUsernameFormat(account); !result.ok()) {
+        return result;
+    }
+
     MysqlOperator mysql_operator;
     mysql_operator.connect(db::kHost, db::kUser, db::kPassword, db::kName);
     mysql_operator.executeUpdate(
         "UPDATE users SET is_active = 0 WHERE username = ? AND is_active = 1",
         {account});
     mysql_operator.disconnect();
+    return AuthResult::success();
 }
 
-void AccountReg::checkUsernameFormat(const std::string& username) {
+AuthResult AccountReg::checkUsernameFormat(const std::string& username) const {
     static const std::regex pattern("^[a-zA-Z0-9_]{3,50}$");
     if (!std::regex_match(username, pattern)) {
-        throw std::runtime_error("Invalid username format");
+        return AuthResult::fail(AuthErrorCode::InvalidUsername, "Invalid username format");
     }
+    return AuthResult::success();
 }
 
-void AccountReg::checkPasswordStrength(const std::string& password) {
+AuthResult AccountReg::checkPasswordStrength(const std::string& password) const {
     static const std::regex pattern("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$");
     if (!std::regex_match(password, pattern)) {
-        throw std::runtime_error("Password does not meet strength requirements");
+        return AuthResult::fail(AuthErrorCode::WeakPassword, "Password does not meet strength requirements");
     }
+    return AuthResult::success();
 }
 
 bool AccountReg::checkUsernameExists(const std::string& username) {
@@ -84,6 +96,18 @@ std::string AccountReg::hashPassword(const std::string& password, const std::str
 
 void accountRegTest() {
     AccountReg accountReg;
+
     accountReg.unregisterAccount("xhh");
-    accountReg.registerAccount("xhh", "Xhh123456");
+    if (auto result = accountReg.registerAccount("xhh", "Xhh123456"); !result.ok()) {
+        std::cerr << "register failed: " << result.message << std::endl;
+        return;
+    }
+    std::cout << "register success" << std::endl;
+
+    const AuthResult duplicate = accountReg.registerAccount("xhh", "Xhh123456");
+    if (duplicate.ok()) {
+        std::cerr << "duplicate register should fail" << std::endl;
+        return;
+    }
+    std::cout << "duplicate register rejected: " << duplicate.message << std::endl;
 }

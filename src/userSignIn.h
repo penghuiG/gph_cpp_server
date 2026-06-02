@@ -1,18 +1,18 @@
 ﻿#pragma once
 
-#include "accountReg.h"
-
 #include <mutex>
 #include <string>
 #include <unordered_set>
+
+#include "authResult.h"
 
 class UserSignIn {
 public:
     UserSignIn() = default;
     ~UserSignIn() = default;
 
-    void signIn(const std::string& account, const std::string& password);
-    void signOut(const std::string& account);
+    AuthResult signIn(const std::string& account, const std::string& password);
+    AuthResult signOut(const std::string& account);
     bool checkSignIn(const std::string& account);
 
 private:
