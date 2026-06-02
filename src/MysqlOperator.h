@@ -18,8 +18,13 @@ public:
     void disconnect();
     void execute(const std::string& query);
     void execute(const std::string& query, const std::vector<std::string>& params);
+    bool exists(const std::string& query, const std::vector<std::string>& params);
+    bool queryOne(const std::string& query, const std::vector<std::string>& params, std::string& out);
+    void executeUpdate(const std::string& query, const std::vector<std::string>& params = {});
 
 private:
     sql::mysql::MySQL_Driver* driver = nullptr;
     sql::Connection* connection = nullptr;
 };
+
+int mysql_operator_test();

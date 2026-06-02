@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include "accountReg.h"
-#include <unordered_map>
-#include <mutex>
 
+#include <mutex>
+#include <string>
+#include <unordered_set>
 
 class UserSignIn {
 public:
@@ -15,6 +16,8 @@ public:
     bool checkSignIn(const std::string& account);
 
 private:
-    std::unordered_map<std::string, std::string> users;
-    std::mutex mu;
+    std::unordered_set<std::string> sessions_;
+    std::mutex mu_;
 };
+
+void userSignInTest();
