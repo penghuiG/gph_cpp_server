@@ -1,10 +1,10 @@
 ﻿#include "tcpServer.h"
 
 #include "epoll.h"
+#include "logger.h"
 
 #include <cerrno>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 
 #include <arpa/inet.h>
@@ -65,7 +65,7 @@ void TcpServer::start() {
     epoll.addEvent(serverSocket, EPOLLIN);
     running = true;
 
-    std::cout << "Server started on port " << port << std::endl;
+    LOG_INFO << "server started on port " << port;
 }
 
 void TcpServer::stop() {
@@ -90,13 +90,14 @@ void TcpServer::handleEventCallback(const epoll_event& event) {
             try {
                 acceptClient();
             } catch (const std::exception& e) {
-                std::cerr << "accept error: " << e.what() << std::endl;
+                LOG_ERROR << "accept error: " << e.what();
             }
         });
         return;
     }
 
     if (event.events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP)) {
+        LOG_INFO << "client disconnected, fd=" << fd;
         epoll.removeEvent(fd);
         ::close(fd);
         return;
@@ -107,7 +108,7 @@ void TcpServer::handleEventCallback(const epoll_event& event) {
             try {
                 handleClient(fd);
             } catch (const std::exception& e) {
-                std::cerr << "client handler error: " << e.what() << std::endl;
+                LOG_ERROR << "client handler error, fd=" << fd << ", err=" << e.what();
                 epoll.removeEvent(fd);
                 ::close(fd);
             }
@@ -131,6 +132,7 @@ void TcpServer::acceptClient() {
         }
 
         sendAll(clientFd, "commands: REGISTER LOGIN LOGOUT UNREGISTER CHECK\n");
+        LOG_INFO << "client connected, fd=" << clientFd;
         epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);
     }
 }
@@ -154,6 +156,7 @@ void TcpServer::handleClient(int clientFd) {
     while (true) {
         ssize_t n = ::read(clientFd, buf, sizeof(buf) - 1);
         if (n == 0) {
+            LOG_INFO << "client closed, fd=" << clientFd;
             epoll.removeEvent(clientFd);
             ::close(clientFd);
             return;
@@ -166,7 +169,9 @@ void TcpServer::handleClient(int clientFd) {
         }
 
         buf[n] = '\0';
+        LOG_DEBUG << "recv fd=" << clientFd << ", data=" << buf;
         const std::string response = requestHandler_.handle(buf);
+        LOG_DEBUG << "send fd=" << clientFd << ", data=" << response;
         sendAll(clientFd, response);
     }
 }

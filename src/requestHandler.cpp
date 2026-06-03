@@ -1,5 +1,7 @@
 ﻿#include "requestHandler.h"
 
+#include "logger.h"
+
 #include <sstream>
 
 namespace {
@@ -39,6 +41,7 @@ std::string RequestHandler::handle(const std::string& rawLine) {
                 return formatResponse(
                     AuthResult::fail(AuthErrorCode::BadRequest, "usage: REGISTER username password"));
             }
+            LOG_INFO << "cmd=REGISTER user=" << username;
             return formatResponse(accountReg_.registerAccount(username, password));
         }
 
@@ -49,6 +52,7 @@ std::string RequestHandler::handle(const std::string& rawLine) {
                 return formatResponse(
                     AuthResult::fail(AuthErrorCode::BadRequest, "usage: UNREGISTER username"));
             }
+            LOG_INFO << "cmd=UNREGISTER user=" << username;
             return formatResponse(accountReg_.unregisterAccount(username));
         }
 
@@ -60,7 +64,12 @@ std::string RequestHandler::handle(const std::string& rawLine) {
                 return formatResponse(
                     AuthResult::fail(AuthErrorCode::BadRequest, "usage: LOGIN username password"));
             }
-            return formatResponse(userSignIn_.signIn(username, password));
+            LOG_INFO << "cmd=LOGIN user=" << username;
+            const AuthResult result = userSignIn_.signIn(username, password);
+            if (!result.ok()) {
+                LOG_WARN << "login failed, user=" << username << ", reason=" << result.message;
+            }
+            return formatResponse(result);
         }
 
         if (cmd == "LOGOUT") {
@@ -70,6 +79,7 @@ std::string RequestHandler::handle(const std::string& rawLine) {
                 return formatResponse(
                     AuthResult::fail(AuthErrorCode::BadRequest, "usage: LOGOUT username"));
             }
+            LOG_INFO << "cmd=LOGOUT user=" << username;
             return formatResponse(userSignIn_.signOut(username));
         }
 
@@ -80,6 +90,7 @@ std::string RequestHandler::handle(const std::string& rawLine) {
                 return formatResponse(
                     AuthResult::fail(AuthErrorCode::BadRequest, "usage: CHECK username"));
             }
+            LOG_DEBUG << "cmd=CHECK user=" << username;
             if (userSignIn_.checkSignIn(username)) {
                 return formatResponse(AuthResult::success());
             }
@@ -88,6 +99,7 @@ std::string RequestHandler::handle(const std::string& rawLine) {
 
         return formatResponse(AuthResult::fail(AuthErrorCode::BadRequest, "unknown command"));
     } catch (const std::exception& e) {
+        LOG_ERROR << "request handler exception: " << e.what();
         return formatResponse(AuthResult::fail(AuthErrorCode::DbError, e.what()));
     }
 }

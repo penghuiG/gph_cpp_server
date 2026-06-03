@@ -1,7 +1,9 @@
-#include "dbOperator.h"
+﻿#include "dbOperator.h"
 
-#include <iostream>
+#include <sstream>
 #include <stdexcept>
+
+#include "logger.h"
 
 namespace {
 
@@ -9,11 +11,12 @@ void printResultSet(sql::ResultSet* res) {
     sql::ResultSetMetaData* meta = res->getMetaData();
     const int columnCount = meta->getColumnCount();
     while (res->next()) {
+        std::ostringstream row;
         for (int i = 1; i <= columnCount; ++i) {
-            if (i > 1) std::cout << '\t';
-            std::cout << res->getString(i);
+            if (i > 1) row << '\t';
+            row << res->getString(i);
         }
-        std::cout << '\n';
+        LOG_DEBUG << "query result: " << row.str();
     }
 }
 

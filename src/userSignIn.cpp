@@ -5,6 +5,7 @@
 #include "authUtil.h"
 #include "dbConfig.h"
 #include "dbOperator.h"
+#include "logger.h"
 
 AuthResult UserSignIn::signIn(const std::string& account, const std::string& password) {
     MysqlOperator mysql_operator;
@@ -41,15 +42,15 @@ void userSignInTest() {
     UserSignIn userSignIn;
 
     if (auto result = userSignIn.signIn("xhh", "Xhh123456"); !result.ok()) {
-        std::cerr << "sign in failed: " << result.message << std::endl;
+        LOG_ERROR << "sign in failed: " << result.message;
         return;
     }
     if (userSignIn.checkSignIn("xhh")) {
-        std::cout << "sign in success" << std::endl;
+        LOG_INFO << "sign in success";
     }
 
     userSignIn.signOut("xhh");
     if (!userSignIn.checkSignIn("xhh")) {
-        std::cout << "sign out success" << std::endl;
+        LOG_INFO << "sign out success";
     }
 }

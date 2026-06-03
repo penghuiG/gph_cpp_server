@@ -6,6 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <future>
+#include "logger.h"
 
 class ThreadPool {
     public:
@@ -42,10 +43,9 @@ class ThreadPool {
                     try {
                         (*task)();
                     } catch (const std::exception& e) {
-                        std::cerr << "[ThreadPool Exception] "
-                                  << e.what() << std::endl;
+                        LOG_ERROR << "thread pool exception: " << e.what();
                     } catch (...) {
-                        std::cerr << "[ThreadPool Unknown Exception]" << std::endl;
+                        LOG_ERROR << "thread pool unknown exception";
                     }
                 });
             }

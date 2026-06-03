@@ -1,12 +1,12 @@
 ﻿#include "accountReg.h"
 
-#include <iostream>
 #include <random>
 #include <regex>
 
 #include "authUtil.h"
 #include "dbConfig.h"
 #include "dbOperator.h"
+#include "logger.h"
 
 AuthResult AccountReg::registerAccount(const std::string& account, const std::string& password) {
     if (auto result = checkUsernameFormat(account); !result.ok()) {
@@ -34,6 +34,7 @@ AuthResult AccountReg::registerAccount(const std::string& account, const std::st
     }
     mysql_operator.disconnect();
     return AuthResult::success();
+    
 }
 
 AuthResult AccountReg::unregisterAccount(const std::string& account) {
@@ -99,15 +100,15 @@ void accountRegTest() {
 
     accountReg.unregisterAccount("xhh");
     if (auto result = accountReg.registerAccount("xhh", "Xhh123456"); !result.ok()) {
-        std::cerr << "register failed: " << result.message << std::endl;
+        LOG_ERROR << "register failed: " << result.message;
         return;
     }
-    std::cout << "register success" << std::endl;
+    LOG_INFO << "register success";
 
     const AuthResult duplicate = accountReg.registerAccount("xhh", "Xhh123456");
     if (duplicate.ok()) {
-        std::cerr << "duplicate register should fail" << std::endl;
+        LOG_ERROR << "duplicate register should fail";
         return;
     }
-    std::cout << "duplicate register rejected: " << duplicate.message << std::endl;
+    LOG_INFO << "duplicate register rejected: " << duplicate.message;
 }
