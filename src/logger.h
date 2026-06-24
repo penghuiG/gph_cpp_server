@@ -15,7 +15,9 @@ enum class LogLevel {
 class Logger {
 public:
     static Logger& instance();
-
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+    
     void setMinLevel(LogLevel level);
     void setConsoleEnabled(bool enabled);
     void setLogFile(const std::string& path);
