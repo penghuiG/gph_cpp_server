@@ -3,6 +3,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "authResult.h"
 
@@ -14,6 +15,7 @@ public:
     AuthResult signIn(const std::string& account, const std::string& password);
     AuthResult signOut(const std::string& account);
     bool checkSignIn(const std::string& account);
+    std::vector<std::string> getOnlineUsers();
 
 private:
     std::unordered_set<std::string> sessions_;

@@ -19,8 +19,8 @@ std::string trim(std::string s) {
 
 }  // namespace
 
-RequestHandler::RequestHandler(AccountReg& accountReg, UserSignIn& userSignIn)
-    : accountReg_(accountReg), userSignIn_(userSignIn) {}
+RequestHandler::RequestHandler(AccountReg& accountReg, UserSignIn& userSignIn, UserProfile& userProfile)
+    : accountReg_(accountReg), userSignIn_(userSignIn), userProfile_(userProfile) {}
 
 std::string RequestHandler::handle(const std::string& rawLine) {
     try {
@@ -95,6 +95,77 @@ std::string RequestHandler::handle(const std::string& rawLine) {
                 return formatResponse(AuthResult::success());
             }
             return formatResponse(AuthResult::fail(AuthErrorCode::InvalidCredentials, "not signed in"));
+        }
+
+        if (cmd == "GET_PROFILE") {
+            std::string username;
+            iss >> username;
+            if (username.empty()) {
+                return formatResponse(
+                    AuthResult::fail(AuthErrorCode::BadRequest, "usage: GET_PROFILE username"));
+            }
+            LOG_INFO << "cmd=GET_PROFILE user=" << username;
+            return formatResponse(userProfile_.getProfile(username));
+        }
+
+        if (cmd == "UPDATE_PROFILE") {
+            std::string username;
+            iss >> username;
+            if (username.empty()) {
+                return formatResponse(
+                    AuthResult::fail(AuthErrorCode::BadRequest, "usage: UPDATE_PROFILE username [nickname=value] [email=value]"));
+            }
+
+            std::string nickname;
+            std::string email;
+            std::string token;
+            while (iss >> token) {
+                const auto eq = token.find('=');
+                if (eq == std::string::npos) {
+                    return formatResponse(
+                        AuthResult::fail(AuthErrorCode::BadRequest, "invalid format, use key=value"));
+                }
+                const std::string key = token.substr(0, eq);
+                const std::string value = token.substr(eq + 1);
+                if (key == "nickname") {
+                    nickname = value;
+                } else if (key == "email") {
+                    email = value;
+                } else {
+                    return formatResponse(
+                        AuthResult::fail(AuthErrorCode::BadRequest, "unknown field: " + key + ", supported: nickname, email"));
+                }
+            }
+
+            LOG_INFO << "cmd=UPDATE_PROFILE user=" << username;
+            return formatResponse(userProfile_.updateProfile(username, nickname, email));
+        }
+
+        if (cmd == "CHANGE_PASSWORD") {
+            std::string username;
+            std::string oldPassword;
+            std::string newPassword;
+            iss >> username >> oldPassword >> newPassword;
+            if (username.empty() || oldPassword.empty() || newPassword.empty()) {
+                return formatResponse(
+                    AuthResult::fail(AuthErrorCode::BadRequest, "usage: CHANGE_PASSWORD username old_password new_password"));
+            }
+            LOG_INFO << "cmd=CHANGE_PASSWORD user=" << username;
+            return formatResponse(accountReg_.changePassword(username, oldPassword, newPassword));
+        }
+
+        if (cmd == "LIST_ONLINE") {
+            LOG_DEBUG << "cmd=LIST_ONLINE";
+            const auto users = userSignIn_.getOnlineUsers();
+            if (users.empty()) {
+                return formatResponse(AuthResult::successWithData("online users", "none"));
+            }
+            std::ostringstream oss;
+            for (size_t i = 0; i < users.size(); ++i) {
+                if (i > 0) oss << ",";
+                oss << users[i];
+            }
+            return formatResponse(AuthResult::successWithData("online users", oss.str()));
         }
 
         return formatResponse(AuthResult::fail(AuthErrorCode::BadRequest, "unknown command"));

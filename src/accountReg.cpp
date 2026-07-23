@@ -95,6 +95,40 @@ std::string AccountReg::hashPassword(const std::string& password, const std::str
     return auth::hashPassword(password, salt);
 }
 
+AuthResult AccountReg::changePassword(const std::string& account, const std::string& oldPassword, const std::string& newPassword) {
+    if (auto result = checkUsernameFormat(account); !result.ok()) {
+        return result;
+    }
+    if (auto result = checkPasswordStrength(newPassword); !result.ok()) {
+        return result;
+    }
+
+    MysqlOperator mysql_operator;
+    mysql_operator.connect(db::kHost, db::kUser, db::kPassword, db::kName);
+
+    std::string stored;
+    const bool found = mysql_operator.queryOne(
+        "SELECT password_hash FROM users WHERE username = ? AND is_active = 1 LIMIT 1",
+        {account},
+        stored);
+    if (!found) {
+        mysql_operator.disconnect();
+        return AuthResult::fail(AuthErrorCode::UserNotFound, "user not found");
+    }
+    if (!auth::verifyStoredPassword(oldPassword, stored)) {
+        mysql_operator.disconnect();
+        return AuthResult::fail(AuthErrorCode::InvalidCredentials, "old password is incorrect");
+    }
+
+    const std::string salt = generateSalt();
+    const std::string newStored = salt + ":" + auth::hashPassword(newPassword, salt);
+    mysql_operator.executeUpdate(
+        "UPDATE users SET password_hash = ? WHERE username = ?",
+        {newStored, account});
+    mysql_operator.disconnect();
+    return AuthResult::success("password changed");
+}
+
 void accountRegTest() {
     AccountReg accountReg;
 

@@ -7,6 +7,7 @@
 #include "accountReg.h"
 #include "requestHandler.h"
 #include "threadPoll.h"
+#include "userProfile.h"
 #include "userSignIn.h"
 
 class Epoll;
@@ -37,5 +38,6 @@ private:
 
     AccountReg accountReg_;
     UserSignIn userSignIn_;
+    UserProfile userProfile_;
     RequestHandler requestHandler_;
 };

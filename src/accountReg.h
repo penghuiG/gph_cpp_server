@@ -23,6 +23,7 @@ public:
 
     AuthResult registerAccount(const std::string& account, const std::string& password);
     AuthResult unregisterAccount(const std::string& account);
+    AuthResult changePassword(const std::string& account, const std::string& oldPassword, const std::string& newPassword);
 
 private:
     AuthResult checkUsernameFormat(const std::string& username) const;

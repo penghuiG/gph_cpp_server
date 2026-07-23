@@ -20,6 +20,8 @@ public:
     void execute(const std::string& query, const std::vector<std::string>& params);
     bool exists(const std::string& query, const std::vector<std::string>& params);
     bool queryOne(const std::string& query, const std::vector<std::string>& params, std::string& out);
+    bool queryRow(const std::string& query, const std::vector<std::string>& params, std::vector<std::string>& out);
+    std::vector<std::vector<std::string>> queryAll(const std::string& query, const std::vector<std::string>& params = {});
     void executeUpdate(const std::string& query, const std::vector<std::string>& params = {});
 
 private:

@@ -38,6 +38,11 @@ bool UserSignIn::checkSignIn(const std::string& account) {
     return sessions_.count(account) > 0;
 }
 
+std::vector<std::string> UserSignIn::getOnlineUsers() {
+    std::lock_guard<std::mutex> lk(mu_);
+    return std::vector<std::string>(sessions_.begin(), sessions_.end());
+}
+
 void userSignInTest() {
     UserSignIn userSignIn;
 

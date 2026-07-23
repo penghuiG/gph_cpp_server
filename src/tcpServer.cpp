@@ -17,7 +17,7 @@ TcpServer::TcpServer(Epoll& epoll, int port)
     : epoll(epoll),
       port(port),
       threadPool(10),
-      requestHandler_(accountReg_, userSignIn_) {}
+      requestHandler_(accountReg_, userSignIn_, userProfile_) {}
 
 TcpServer::~TcpServer() {
     try {
@@ -131,7 +131,7 @@ void TcpServer::acceptClient() {
             continue;
         }
 
-        sendAll(clientFd, "commands: REGISTER LOGIN LOGOUT UNREGISTER CHECK\n");
+        sendAll(clientFd, "commands: REGISTER LOGIN LOGOUT UNREGISTER CHECK GET_PROFILE UPDATE_PROFILE CHANGE_PASSWORD LIST_ONLINE\n");
         LOG_INFO << "client connected, fd=" << clientFd;
         epoll.addEvent(clientFd, EPOLLIN | EPOLLRDHUP);
     }

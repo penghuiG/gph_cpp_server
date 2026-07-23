@@ -89,6 +89,53 @@ bool MysqlOperator::queryOne(const std::string& query, const std::vector<std::st
     return true;
 }
 
+bool MysqlOperator::queryRow(const std::string& query, const std::vector<std::string>& params, std::vector<std::string>& out) {
+    if (!connection) throw std::runtime_error("MysqlOperator::queryRow called before connect()");
+    sql::PreparedStatement* stmt = connection->prepareStatement(query);
+    for (size_t i = 0; i < params.size(); i++) {
+        stmt->setString(static_cast<unsigned int>(i + 1), params[i]);
+    }
+    sql::ResultSet* res = stmt->executeQuery();
+    if (!res->next()) {
+        delete res;
+        delete stmt;
+        return false;
+    }
+    sql::ResultSetMetaData* meta = res->getMetaData();
+    const int colCount = meta->getColumnCount();
+    out.clear();
+    out.reserve(static_cast<size_t>(colCount));
+    for (int i = 1; i <= colCount; ++i) {
+        out.push_back(res->getString(i));
+    }
+    delete res;
+    delete stmt;
+    return true;
+}
+
+std::vector<std::vector<std::string>> MysqlOperator::queryAll(const std::string& query, const std::vector<std::string>& params) {
+    if (!connection) throw std::runtime_error("MysqlOperator::queryAll called before connect()");
+    std::vector<std::vector<std::string>> rows;
+    sql::PreparedStatement* stmt = connection->prepareStatement(query);
+    for (size_t i = 0; i < params.size(); i++) {
+        stmt->setString(static_cast<unsigned int>(i + 1), params[i]);
+    }
+    sql::ResultSet* res = stmt->executeQuery();
+    sql::ResultSetMetaData* meta = res->getMetaData();
+    const int colCount = meta->getColumnCount();
+    while (res->next()) {
+        std::vector<std::string> row;
+        row.reserve(static_cast<size_t>(colCount));
+        for (int i = 1; i <= colCount; ++i) {
+            row.push_back(res->getString(i));
+        }
+        rows.push_back(std::move(row));
+    }
+    delete res;
+    delete stmt;
+    return rows;
+}
+
 void MysqlOperator::executeUpdate(const std::string& query, const std::vector<std::string>& params) {
     if (!connection) throw std::runtime_error("MysqlOperator::executeUpdate called before connect()");
     if (params.empty()) {
